@@ -3,14 +3,14 @@ provider "azurerm" {
 }
 
 module "resource_group" {
-  source      = "git::git@github.com:opz0/terraform-azure-resource-group.git?ref=master"
-  name        = "app-public"
+  source      = "git::https://github.com/opz0/terraform-azure-resource-group.git?ref=v1.0.0"
+  name        = "app"
   environment = "tested"
   location    = "North Europe"
 }
 
 module "vnet" {
-  source              = "git::git@github.com:opz0/terraform-azure-vnet.git?ref=master"
+  source              = "git::https://github.com/opz0/terraform-azure-vnet.git?ref=v1.0.0"
   name                = "app"
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
@@ -19,18 +19,15 @@ module "vnet" {
 }
 
 module "subnet" {
-  source = "git::git@github.com:opz0/terraform-azure-subnet.git?ref=master"
-
+  source               = "git::https://github.com/opz0/terraform-azure-subnet.git?ref=v1.0.0"
   name                 = "app"
   environment          = "test"
   resource_group_name  = module.resource_group.resource_group_name
   location             = module.resource_group.resource_group_location
-  virtual_network_name = module.vnet.vnet_name[0]
-
+  virtual_network_name = module.vnet.name
   #subnet
   subnet_names    = ["subnet1"]
   subnet_prefixes = ["10.30.0.0/20"]
-
   # route_table
   enable_route_table = true
   route_table_name   = "default_subnet"
@@ -45,13 +42,11 @@ module "subnet" {
 
 
 module "aks" {
-  source      = "../.."
-  name        = "app"
-  environment = "test"
-
-  resource_group_name = module.resource_group.resource_group_name
-  location            = module.resource_group.resource_group_location
-
+  source                  = "../.."
+  name                    = "app"
+  environment             = "test"
+  resource_group_name     = module.resource_group.resource_group_name
+  location                = module.resource_group.resource_group_location
   kubernetes_version      = "1.25.6"
   private_cluster_enabled = false
   default_node_pool = {
@@ -62,7 +57,6 @@ module "aks" {
     count                 = 1
     enable_node_public_ip = false
   }
-
 
   ##### if requred more than one node group.
   nodes_pools = [
@@ -76,16 +70,7 @@ module "aks" {
       mode                  = "User"
     },
   ]
-
   #networking
-  vnet_id         = join("", module.vnet.vnet_id)
+  vnet_id         = module.vnet.id
   nodes_subnet_id = module.subnet.default_subnet_id
-
-  # acr_id       = "****" #pass this value if you  want aks to pull image from acr else remove it
-  #  key_vault_id = module.vault.id #pass this value of variable 'cmk_enabled = true' if you want to enable Encryption with a Customer-managed key else remove it.
-
-  #### enable diagnostic setting.
-  microsoft_defender_enabled = false
-  diagnostic_setting_enable  = false
-  #log_analytics_workspace_id = module.log-analytics.workspace_id # when diagnostic_setting_enable = true && oms_agent_enabled = true
 }

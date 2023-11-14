@@ -36,6 +36,7 @@ variable "enabled" {
 }
 
 variable "resource_group_name" {
+  type        = any
   default     = ""
   description = "A container that holds related resources for an Azure solution"
 }
@@ -224,11 +225,6 @@ variable "role_based_access_control" {
 }
 
 # Diagnosis Settings Enable
-variable "storage_account_id" {
-  type        = string
-  default     = null
-  description = "Storage account id to pass it to destination details of diagnosys setting of NSG."
-}
 
 variable "cmk_enabled" {
   type        = bool

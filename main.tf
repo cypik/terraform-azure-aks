@@ -44,7 +44,7 @@ locals {
 
 
 module "labels" {
-  source      = "git::git@github.com:opz0/terraform-azure-labels.git?ref=master"
+  source      = "git::https://github.com/opz0/terraform-azure-labels.git?ref=v1.0.0"
   name        = var.name
   environment = var.environment
   managedby   = var.managedby
@@ -56,7 +56,8 @@ module "labels" {
 locals {
   private_dns_zone = var.private_dns_zone_type == "Custom" ? var.private_dns_zone_id : var.private_dns_zone_type
 }
-#tfsec:ignore:azure-container-use-rbac-permissions    ## because by default we use without rbac
+#tfsec:ignore:azure-container-use-rbac-permissions
+#tfsec:ignore:azure-container-logging
 resource "azurerm_kubernetes_cluster" "aks" {
   count                            = var.enabled ? 1 : 0
   name                             = format("%s-aks", module.labels.id)
@@ -66,7 +67,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version               = var.kubernetes_version
   sku_tier                         = var.aks_sku_tier
   node_resource_group              = var.node_resource_group
-  disk_encryption_set_id           = var.key_vault_id != "" ? join("", azurerm_disk_encryption_set.main.*.id) : null
+  disk_encryption_set_id           = var.key_vault_id != "" ? join("", azurerm_disk_encryption_set.main[*].id) : null
   private_cluster_enabled          = var.private_cluster_enabled
   private_dns_zone_id              = var.private_cluster_enabled ? local.private_dns_zone : null
   http_application_routing_enabled = var.enable_http_application_routing
@@ -145,7 +146,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 resource "azurerm_kubernetes_cluster_node_pool" "node_pools" {
 
   count                 = length(local.nodes_pools)
-  kubernetes_cluster_id = join("", azurerm_kubernetes_cluster.aks.*.id)
+  kubernetes_cluster_id = join("", azurerm_kubernetes_cluster.aks[*].id)
   name                  = local.nodes_pools[count.index].name
   vm_size               = local.nodes_pools[count.index].vm_size
   os_type               = local.nodes_pools[count.index].os_type
@@ -165,7 +166,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "node_pools" {
 resource "azurerm_role_assignment" "aks_system_identity" {
   count                = var.enabled && var.cmk_enabled ? 1 : 0
   principal_id         = azurerm_kubernetes_cluster.aks[0].identity[0].principal_id
-  scope                = join("", azurerm_disk_encryption_set.main.*.id)
+  scope                = join("", azurerm_disk_encryption_set.main[*].id)
   role_definition_name = "Key Vault Crypto Service Encryption User"
 }
 
@@ -189,7 +190,7 @@ resource "azurerm_role_assignment" "aks_acr_access_object_id" {
 resource "azurerm_role_assignment" "aks_user_assigned" {
   count                = var.enabled ? 1 : 0
   principal_id         = azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id
-  scope                = format("/subscriptions/%s/resourceGroups/%s", data.azurerm_subscription.current.subscription_id, join("", azurerm_kubernetes_cluster.aks.*.node_resource_group))
+  scope                = format("/subscriptions/%s/resourceGroups/%s", data.azurerm_subscription.current.subscription_id, join("", azurerm_kubernetes_cluster.aks[*].node_resource_group))
   role_definition_name = "Network Contributor"
 }
 
@@ -207,14 +208,14 @@ resource "azurerm_role_assignment" "aks_uai_private_dns_zone_contributor" {
 
   scope                = var.private_dns_zone_id
   role_definition_name = "Private DNS Zone Contributor"
-  principal_id         = join("", azurerm_user_assigned_identity.aks_user_assigned_identity.*.principal_id)
+  principal_id         = join("", azurerm_user_assigned_identity.aks_user_assigned_identity[*].principal_id)
 }
 
 resource "azurerm_role_assignment" "aks_uai_vnet_network_contributor" {
   count                = var.enabled && var.private_cluster_enabled && var.private_dns_zone_type == "Custom" ? 1 : 0
   scope                = var.vnet_id
   role_definition_name = "Network Contributor"
-  principal_id         = join("", azurerm_user_assigned_identity.aks_user_assigned_identity.*.principal_id)
+  principal_id         = join("", azurerm_user_assigned_identity.aks_user_assigned_identity[*].principal_id)
 }
 
 resource "azurerm_key_vault_key" "example" {
@@ -238,7 +239,7 @@ resource "azurerm_disk_encryption_set" "main" {
   name                = format("aks-%s-dsk-encrpt", module.labels.id)
   resource_group_name = local.resource_group_name
   location            = local.location
-  key_vault_key_id    = var.key_vault_id != "" ? join("", azurerm_key_vault_key.example.*.id) : null
+  key_vault_key_id    = var.key_vault_id != "" ? join("", azurerm_key_vault_key.example[*].id) : null
 
   identity {
     type = "SystemAssigned"
@@ -247,7 +248,7 @@ resource "azurerm_disk_encryption_set" "main" {
 
 resource "azurerm_role_assignment" "azurerm_disk_encryption_set_key_vault_access" {
   count                = var.enabled && var.cmk_enabled ? 1 : 0
-  principal_id         = azurerm_disk_encryption_set.main[0].identity.0.principal_id
+  principal_id         = azurerm_disk_encryption_set.main[0].identity[0].principal_id
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Crypto Service Encryption User"
 }
@@ -257,8 +258,8 @@ resource "azurerm_key_vault_access_policy" "main" {
 
   key_vault_id = var.key_vault_id
 
-  tenant_id = azurerm_disk_encryption_set.main[0].identity.0.tenant_id
-  object_id = azurerm_disk_encryption_set.main[0].identity.0.principal_id
+  tenant_id = azurerm_disk_encryption_set.main[0].identity[0].tenant_id
+  object_id = azurerm_disk_encryption_set.main[0].identity[0].principal_id
   key_permissions = [
     "Get",
     "WrapKey",
