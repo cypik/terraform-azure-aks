@@ -25,7 +25,7 @@ for creating AZURE resources, and you can customize the inputs as needed. Below 
 
 ```hcl
 module "aks" {
-  source              = "git::https://github.com/opz0/terraform-azure-aks.git?ref=v1.0.0"
+  source              = "git::https://github.com/cypik/terraform-azure-aks.git?ref=v1.0.0"
   name                = "app"
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
@@ -63,7 +63,7 @@ module "aks" {
 
 ```hcl
 module "aks" {
-  source                  = "git::https://github.com/opz0/terraform-azure-aks.git?ref=v1.0.0"
+  source                  = "git::https://github.com/cypik/terraform-azure-aks.git?ref=v1.0.0"
   name                    = "app"
   environment             = "test"
   resource_group_name     = module.resource_group.resource_group_name
@@ -107,10 +107,10 @@ This example demonstrates how to create various AZURE resources using the provid
 The module also provides outputs that you can use to retrieve information about the created resources, such as VM information and public IP addresses.
 
 ## Examples
-For detailed examples on how to use this module, please refer to the 'examples' directory within this repository.
+For detailed examples on how to use this module, please refer to the [Examples](https://github.com/cypik/terraform-azure-aks/tree/master/_examples) directory within this repository.
 
 ## License
-This Terraform module is provided under the '[License Name]' License. Please see the [LICENSE](https://github.com/opz0/terraform-azure-aks/blob/readme/LICENSE) file for more details.
+This Terraform module is provided under the '[License Name]' License. Please see the [LICENSE](https://github.com/cypik/terraform-azure-aks/blob/readme/LICENSE) file for more details.
 
 ## Author
 Your Name
