@@ -52,7 +52,7 @@ module "aks" {
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
   location            = module.resource_group.resource_group_location
-  kubernetes_version  = "1.25.6"
+  kubernetes_version  = "1.28.3"
   default_node_pool = {
     name                  = "agentpool"
     max_pods              = 200
