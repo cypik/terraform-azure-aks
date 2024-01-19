@@ -25,7 +25,7 @@ for creating AZURE resources, and you can customize the inputs as needed. Below 
 ```hcl
 module "aks" {
   source              = "cypik/aks/azure"
-  version             = "1.0.1"
+  version             = "1.0.2"
   name                = "app"
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
@@ -64,7 +64,7 @@ module "aks" {
 ```hcl
 module "aks" {
   source                  = "cypik/aks/azure"
-  version                 = "1.0.1"
+  version                 = "1.0.2"
   name                    = "app"
   environment             = "test"
   resource_group_name     = module.resource_group.resource_group_name
@@ -121,7 +121,7 @@ Replace **MIT** and **Cypik** with the appropriate license and your information.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >=3.87.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.88.0 |
 
 ## Modules
 
