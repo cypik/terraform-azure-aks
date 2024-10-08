@@ -25,8 +25,14 @@ variable "label_order" {
 
 variable "managedby" {
   type        = string
-  default     = "Cypik"
-  description = "ManagedBy, eg 'ops0'."
+  default     = "info@cypik.com"
+  description = "ManagedBy, eg 'info@cypik.com'"
+}
+
+variable "extra_tags" {
+  type        = map(string)
+  default     = {}
+  description = "Additional tags (e.g. map(`BusinessUnit`,`XYZ`)."
 }
 
 variable "enabled" {
@@ -153,6 +159,87 @@ variable "nodes_pools" {
 
 }
 
+variable "edge_zone" {
+  type        = string
+  default     = null
+  description = "Specifies the Edge Zone within the Azure Region where this Managed Kubernetes Cluster should exist. Changing this forces a new resource to be created."
+}
+
+variable "image_cleaner_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Specifies whether Image Cleaner is enabled."
+}
+
+variable "image_cleaner_interval_hours" {
+  type        = number
+  default     = 48
+  description = "(Optional) Specifies the interval in hours when images should be cleaned up. Defaults to `48`."
+}
+
+variable "role_based_access_control_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether role based acces control should be enabled or not"
+}
+
+variable "local_account_disabled" {
+  type        = bool
+  default     = false
+  description = "Whether local account should be disable or not"
+}
+
+variable "aci_connector_linux_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable Virtual Node pool"
+}
+
+variable "aci_connector_linux_subnet_name" {
+  type        = string
+  default     = null
+  description = "aci_connector_linux subnet name"
+}
+
+variable "ingress_application_gateway" {
+  type = list(object({
+    gateway_id   = optional(string)
+    gateway_name = optional(string)
+    subnet_cidr  = optional(string)
+    subnet_id    = optional(list(string))
+  }))
+  default     = null
+  description = "The instruction detection block"
+}
+
+variable "enable_http_proxy" {
+  type        = bool
+  default     = false
+  description = "Enable HTTP proxy configuration."
+}
+
+variable "confidential_computing" {
+  type = object({
+    sgx_quote_helper_enabled = bool
+  })
+  default     = null
+  description = "(Optional) Enable Confidential Computing."
+}
+
+variable "kubelet_identity" {
+  type = object({
+    client_id                 = optional(string)
+    object_id                 = optional(string)
+    user_assigned_identity_id = optional(string)
+  })
+  default     = null
+  description = <<-EOT
+ - `client_id` - (Optional) The Client ID of the user-defined Managed Identity to be assigned to the Kubelets. If not specified a Managed Identity is created automatically. Changing this forces a new resource to be created.
+ - `object_id` - (Optional) The Object ID of the user-defined Managed Identity assigned to the Kubelets.If not specified a Managed Identity is created automatically. Changing this forces a new resource to be created.
+ - `user_assigned_identity_id` - (Optional) The ID of the User Assigned Identity assigned to the Kubelets. If not specified a Managed Identity is created automatically. Changing this forces a new resource to be created.
+EOT
+}
+
 variable "vnet_id" {
   type        = string
   default     = null
@@ -212,6 +299,24 @@ variable "key_vault_id" {
   type        = string
   default     = ""
   description = "Specifies the URL to a Key Vault Key (either from a Key Vault Key, or the Key URL for the Key Vault Secret"
+}
+
+variable "capacity_reservation_group_id" {
+  type        = string
+  default     = null
+  description = "(Optional) Specifies the eBPF data plane used for building the Kubernetes network. Possible value is `cilium`. Changing this forces a new resource to be created."
+}
+
+variable "workload_runtime" {
+  type        = string
+  default     = null
+  description = "Used to specify the workload runtime. Allowed values are OCIContainer, WasmWasi and KataMshvVmIsolation."
+}
+
+variable "agents_availability_zones" {
+  type        = list(string)
+  default     = null
+  description = "(Optional) A list of Availability Zones across which the Node Pool should be spread. Changing this forces a new resource to be created."
 }
 
 variable "role_based_access_control" {

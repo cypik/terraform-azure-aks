@@ -4,15 +4,15 @@ provider "azurerm" {
 
 module "resource_group" {
   source      = "cypik/resource-group/azure"
-  version     = "1.0.1"
-  name        = "app2"
+  version     = "1.0.2"
+  name        = "app"
   environment = "tested"
-  location    = "North Europe"
+  location    = "East US"
 }
 
 module "vnet" {
   source              = "cypik/vnet/azure"
-  version             = "1.0.1"
+  version             = "1.0.2"
   name                = "app"
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
@@ -22,7 +22,7 @@ module "vnet" {
 
 module "subnet" {
   source               = "cypik/subnet/azure"
-  version              = "1.0.1"
+  version              = "1.0.2"
   name                 = "app"
   environment          = "test"
   resource_group_name  = module.resource_group.resource_group_name
@@ -50,7 +50,7 @@ module "aks" {
   environment             = "test"
   resource_group_name     = module.resource_group.resource_group_name
   location                = module.resource_group.resource_group_location
-  kubernetes_version      = "1.28.3"
+  kubernetes_version      = "1.29.0"
   private_cluster_enabled = false
   default_node_pool = {
     name                  = "agentpool1"
@@ -72,7 +72,10 @@ module "aks" {
       enable_node_public_ip = false
       mode                  = "User"
     },
+
   ]
+
+
   #networking
   vnet_id         = module.vnet.id
   nodes_subnet_id = module.subnet.default_subnet_id
