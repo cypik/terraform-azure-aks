@@ -7,21 +7,26 @@ locals {
   resource_group_name = var.resource_group_name
   location            = var.location
   default_agent_profile = {
-    name                  = "agentpool"
-    count                 = 1
-    vm_size               = "Standard_D2_v3"
-    os_type               = "Linux"
-    enable_auto_scaling   = false
-    min_count             = null
-    max_count             = null
-    type                  = "VirtualMachineScaleSets"
-    node_taints           = null
-    vnet_subnet_id        = var.nodes_subnet_id
-    max_pods              = 30
-    os_disk_type          = "Managed"
-    os_disk_size_gb       = 128
-    enable_node_public_ip = false
-    mode                  = "System"
+    name                   = "agentpool"
+    count                  = 1
+    vm_size                = "Standard_D2_v3"
+    os_type                = "Linux"
+    auto_scaling_enabled   = false
+    node_taints            = null
+    min_count              = null
+    max_count              = null
+    type                   = "VirtualMachineScaleSets"
+    vnet_subnet_id         = var.nodes_subnet_id
+    max_pods               = 30
+    os_disk_type           = "Managed"
+    os_disk_size_gb        = 128
+    node_public_ip_enabled = false
+    mode                   = "System"
+    orchestrator_version   = null
+    node_taints            = null
+    host_group_id          = null
+
+
   }
 
   default_node_pool         = merge(local.default_agent_profile, var.default_node_pool)
@@ -45,12 +50,13 @@ locals {
 
 module "labels" {
   source      = "cypik/labels/azure"
-  version     = "1.0.1"
+  version     = "1.0.2"
   name        = var.name
   environment = var.environment
   managedby   = var.managedby
   label_order = var.label_order
   repository  = var.repository
+  extra_tags  = var.extra_tags
 }
 
 
@@ -60,26 +66,31 @@ locals {
 #tfsec:ignore:azure-container-use-rbac-permissions
 #tfsec:ignore:azure-container-logging
 resource "azurerm_kubernetes_cluster" "aks" {
-  count                            = var.enabled ? 1 : 0
-  name                             = format("%s-aks", module.labels.id)
-  location                         = local.location
-  resource_group_name              = local.resource_group_name
-  dns_prefix                       = replace(module.labels.id, "/[\\W_]/", "-")
-  kubernetes_version               = var.kubernetes_version
-  sku_tier                         = var.aks_sku_tier
-  node_resource_group              = var.node_resource_group
-  disk_encryption_set_id           = var.key_vault_id != "" ? join("", azurerm_disk_encryption_set.main[*].id) : null
-  private_cluster_enabled          = var.private_cluster_enabled
-  private_dns_zone_id              = var.private_cluster_enabled ? local.private_dns_zone : null
-  http_application_routing_enabled = var.enable_http_application_routing
-  azure_policy_enabled             = var.enable_azure_policy
+  count                             = var.enabled ? 1 : 0
+  name                              = format("%s-aks", module.labels.id)
+  location                          = local.location
+  resource_group_name               = local.resource_group_name
+  dns_prefix                        = replace(module.labels.id, "/[\\W_]/", "-")
+  kubernetes_version                = var.kubernetes_version
+  sku_tier                          = var.aks_sku_tier
+  node_resource_group               = var.node_resource_group
+  disk_encryption_set_id            = var.key_vault_id != "" ? join("", azurerm_disk_encryption_set.main[*].id) : null
+  private_cluster_enabled           = var.private_cluster_enabled
+  private_dns_zone_id               = var.private_cluster_enabled ? local.private_dns_zone : null
+  http_application_routing_enabled  = var.enable_http_application_routing
+  azure_policy_enabled              = var.enable_azure_policy
+  edge_zone                         = var.edge_zone
+  image_cleaner_enabled             = var.image_cleaner_enabled
+  image_cleaner_interval_hours      = var.image_cleaner_interval_hours
+  role_based_access_control_enabled = var.role_based_access_control_enabled
+  local_account_disabled            = var.local_account_disabled
+
   key_vault_secrets_provider {
     secret_rotation_enabled = false
   }
   dynamic "azure_active_directory_role_based_access_control" {
     for_each = var.role_based_access_control == null ? [] : var.role_based_access_control
     content {
-      managed                = azure_active_directory_role_based_access_control.value.managed
       tenant_id              = azure_active_directory_role_based_access_control.value.tenant_id
       admin_group_object_ids = azure_active_directory_role_based_access_control.value.admin_group_object_ids
       azure_rbac_enabled     = azure_active_directory_role_based_access_control.value.azure_rbac_enabled
@@ -87,19 +98,64 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   }
   default_node_pool {
-    name                = local.default_node_pool.name
-    node_count          = local.default_node_pool.count
-    vm_size             = local.default_node_pool.vm_size
-    enable_auto_scaling = local.default_node_pool.enable_auto_scaling
-    min_count           = local.default_node_pool.min_count
-    max_count           = local.default_node_pool.max_count
-    max_pods            = local.default_node_pool.max_pods
-    os_disk_type        = local.default_node_pool.os_disk_type
-    os_disk_size_gb     = local.default_node_pool.os_disk_size_gb
-    type                = local.default_node_pool.type
-    vnet_subnet_id      = local.default_node_pool.vnet_subnet_id
-    node_taints         = local.default_node_pool.node_taints
+    name                 = local.default_node_pool.name
+    node_count           = local.default_node_pool.count
+    vm_size              = local.default_node_pool.vm_size
+    auto_scaling_enabled = local.default_node_pool.auto_scaling_enabled
+    min_count            = local.default_node_pool.min_count
+    max_count            = local.default_node_pool.max_count
+    max_pods             = local.default_node_pool.max_pods
+    os_disk_type         = local.default_node_pool.os_disk_type
+    os_disk_size_gb      = local.default_node_pool.os_disk_size_gb
+    type                 = local.default_node_pool.type
+    vnet_subnet_id       = local.default_node_pool.vnet_subnet_id
 
+  }
+
+
+  dynamic "aci_connector_linux" {
+    for_each = var.aci_connector_linux_enabled ? ["aci_connector_linux"] : []
+
+    content {
+      subnet_name = var.aci_connector_linux_subnet_name
+    }
+  }
+  dynamic "ingress_application_gateway" {
+    for_each = toset(var.ingress_application_gateway != null ? [var.ingress_application_gateway] : [])
+
+    content {
+      gateway_id   = ingress_application_gateway.value.gateway_id
+      gateway_name = ingress_application_gateway.value.gateway_name
+      subnet_cidr  = ingress_application_gateway.value.subnet_cidr
+      subnet_id    = ingress_application_gateway.value.subnet_id
+    }
+  }
+
+  dynamic "kubelet_identity" {
+    for_each = var.kubelet_identity == null ? [] : [var.kubelet_identity]
+    content {
+      client_id                 = kubelet_identity.value.client_id
+      object_id                 = kubelet_identity.value.object_id
+      user_assigned_identity_id = kubelet_identity.value.user_assigned_identity_id
+    }
+  }
+
+  dynamic "http_proxy_config" {
+    for_each = var.enable_http_proxy ? [1] : []
+
+    content {
+      http_proxy  = var.http_proxy_config.http_proxy
+      https_proxy = var.http_proxy_config.https_proxy
+      no_proxy    = var.http_proxy_config.no_proxy
+    }
+  }
+
+  dynamic "confidential_computing" {
+    for_each = var.confidential_computing == null ? [] : [var.confidential_computing]
+
+    content {
+      sgx_quote_helper_enabled = confidential_computing.value.sgx_quote_helper_enabled
+    }
   }
 
   dynamic "microsoft_defender" {
@@ -146,21 +202,29 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
 resource "azurerm_kubernetes_cluster_node_pool" "node_pools" {
 
-  count                 = length(local.nodes_pools)
-  kubernetes_cluster_id = join("", azurerm_kubernetes_cluster.aks[*].id)
-  name                  = local.nodes_pools[count.index].name
-  vm_size               = local.nodes_pools[count.index].vm_size
-  os_type               = local.nodes_pools[count.index].os_type
-  os_disk_type          = local.nodes_pools[count.index].os_disk_type
-  os_disk_size_gb       = local.nodes_pools[count.index].os_disk_size_gb
-  vnet_subnet_id        = local.nodes_pools[count.index].vnet_subnet_id
-  enable_auto_scaling   = local.nodes_pools[count.index].enable_auto_scaling
-  node_count            = local.nodes_pools[count.index].count
-  min_count             = local.nodes_pools[count.index].min_count
-  max_count             = local.nodes_pools[count.index].max_count
-  max_pods              = local.nodes_pools[count.index].max_pods
-  enable_node_public_ip = local.nodes_pools[count.index].enable_node_public_ip
-  mode                  = local.nodes_pools[count.index].mode
+  count                         = length(local.nodes_pools)
+  kubernetes_cluster_id         = join("", azurerm_kubernetes_cluster.aks[*].id)
+  name                          = local.nodes_pools[count.index].name
+  vm_size                       = local.nodes_pools[count.index].vm_size
+  os_type                       = local.nodes_pools[count.index].os_type
+  os_disk_type                  = local.nodes_pools[count.index].os_disk_type
+  os_disk_size_gb               = local.nodes_pools[count.index].os_disk_size_gb
+  vnet_subnet_id                = local.nodes_pools[count.index].vnet_subnet_id
+  auto_scaling_enabled          = local.nodes_pools[count.index].auto_scaling_enabled
+  node_count                    = local.nodes_pools[count.index].count
+  min_count                     = local.nodes_pools[count.index].min_count
+  max_count                     = local.nodes_pools[count.index].max_count
+  max_pods                      = local.nodes_pools[count.index].max_pods
+  node_public_ip_enabled        = local.nodes_pools[count.index].node_public_ip_enabled
+  mode                          = local.nodes_pools[count.index].mode
+  orchestrator_version          = local.nodes_pools[count.index].orchestrator_version
+  node_taints                   = local.nodes_pools[count.index].node_taints
+  host_group_id                 = local.nodes_pools[count.index].host_group_id
+  capacity_reservation_group_id = var.capacity_reservation_group_id
+  workload_runtime              = var.workload_runtime
+  zones                         = var.agents_availability_zones
+
+
 }
 
 # Allow aks system indentiy access to encrpty disc
