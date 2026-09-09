@@ -1,4 +1,3 @@
-
 data "azurerm_subscription" "current" {}
 data "azurerm_client_config" "current" {}
 
@@ -50,7 +49,7 @@ locals {
 
 module "labels" {
   source      = "cypik/labels/azure"
-  version     = "1.0.2"
+  version     = "1.0.3"
   name        = var.name
   environment = var.environment
   managedby   = var.managedby
@@ -110,6 +109,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type                 = local.default_node_pool.type
     vnet_subnet_id       = local.default_node_pool.vnet_subnet_id
 
+  }
+
+  node_provisioning_profile {
+    mode = var.node_provisioning_mode
   }
 
 

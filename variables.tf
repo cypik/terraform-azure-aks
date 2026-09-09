@@ -65,6 +65,12 @@ variable "aks_sku_tier" {
   description = "aks sku tier. Possible values are Free ou Paid"
 }
 
+variable "node_provisioning_mode" {
+  type        = string
+  default     = "Manual"
+  description = "The node provisioning mode for the AKS cluster. Possible values are `Auto` and `Manual`."
+}
+
 variable "private_cluster_enabled" {
   type        = bool
   default     = true

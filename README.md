@@ -25,7 +25,7 @@ for creating AZURE resources, and you can customize the inputs as needed. Below 
 ```hcl
 module "aks" {
   source              = "cypik/aks/azure"
-  version             = "1.0.3"
+  version             = "1.0.4"
   name                = "app"
   environment         = "test"
   resource_group_name = module.resource_group.resource_group_name
@@ -64,7 +64,7 @@ module "aks" {
 ```hcl
 module "aks" {
   source                  = "cypik/aks/azure"
-  version                 = "1.0.3"
+  version                 = "1.0.4"
   name                    = "app"
   environment             = "test"
   resource_group_name     = module.resource_group.resource_group_name
@@ -114,20 +114,20 @@ Replace **MIT** and **Cypik** with the appropriate license and your information.
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9.5 |
-| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 4.2.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.15.8 |
+| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 5.4.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.2.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 5.4.0 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_labels"></a> [labels](#module\_labels) | cypik/labels/azure | 1.0.2 |
+| <a name="module_labels"></a> [labels](#module\_labels) | cypik/labels/azure | 1.0.3 |
 
 ## Resources
 
@@ -188,6 +188,7 @@ Replace **MIT** and **Cypik** with the appropriate license and your information.
 | <a name="input_name"></a> [name](#input\_name) | Name  (e.g. `app` or `cluster`). | `string` | `""` | no |
 | <a name="input_network_plugin"></a> [network\_plugin](#input\_network\_plugin) | Network plugin to use for networking. | `string` | `"azure"` | no |
 | <a name="input_network_policy"></a> [network\_policy](#input\_network\_policy) | (Optional) Sets up network policy to be used with Azure CNI. Network policy allows us to control the traffic flow between pods. Currently supported values are calico and azure. Changing this forces a new resource to be created. | `string` | `null` | no |
+| <a name="input_node_provisioning_mode"></a> [node\_provisioning\_mode](#input\_node\_provisioning\_mode) | The node provisioning mode for the AKS cluster. Possible values are `Auto` and `Manual`. | `string` | `"Manual"` | no |
 | <a name="input_node_resource_group"></a> [node\_resource\_group](#input\_node\_resource\_group) | Name of the resource group in which to put AKS nodes. If null default to MC\_<AKS RG Name> | `string` | `null` | no |
 | <a name="input_nodes_pools"></a> [nodes\_pools](#input\_nodes\_pools) | A list of nodes pools to create, each item supports same properties as `local.default_agent_profile` | `list(any)` | `[]` | no |
 | <a name="input_nodes_subnet_id"></a> [nodes\_subnet\_id](#input\_nodes\_subnet\_id) | Id of the subnet used for nodes | `string` | n/a | yes |
